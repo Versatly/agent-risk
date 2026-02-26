@@ -5,13 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:web": "npm run dev --workspace @risk/web",
-    "dev:server": "npm run dev --workspace @risk/server",
-    "dev:mcp": "npm run dev --workspace @risk/mcp-server",
-    "dev:cli": "npm run dev --workspace @risk/cli",
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "dev:web": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/web",
+    "dev:server": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/server",
+    "dev:mcp": "npm run build --workspace @risk/shared-types && npm run dev --workspace @risk/mcp-server",
+    "dev:cli": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/cli",
+    "build": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run build --workspace @risk/server && npm run build --workspace @risk/mcp-server && npm run build --workspace @risk/cli && npm run build --workspace @risk/web",
+    "typecheck": "npm run typecheck --workspace @risk/shared-types && npm run typecheck --workspace @risk/game-engine && npm run typecheck --workspace @risk/server && npm run typecheck --workspace @risk/mcp-server && npm run typecheck --workspace @risk/cli && npm run typecheck --workspace @risk/web",
+    "test": "npm run test --workspace @risk/game-engine && npm run test --workspace @risk/server"
   },
   "repository": {
     "type": "git",
