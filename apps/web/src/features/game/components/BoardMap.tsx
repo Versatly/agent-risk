@@ -175,6 +175,7 @@ export function BoardMap({
     };
 
     svgElement.addEventListener("click", svgClickListener);
+    const alaskaNode = getTerritoryNode(svgElement, "alaska");
     // #region agent log
     agentDebugLog({
       hypothesisId: "A",
@@ -184,6 +185,7 @@ export function BoardMap({
         expectedTerritories: territoryIds.length,
         attachedHandlers: handlers.length,
         missingTerritoryNodes,
+        alaskaPointerEvents: alaskaNode?.style.pointerEvents ?? null,
       },
     });
     // #endregion
@@ -245,6 +247,7 @@ export function BoardMap({
           : "none";
       styledTerritories += 1;
     }
+    const alaskaNode = getTerritoryNode(svgElement, "alaska");
     // #region agent log
     agentDebugLog({
       hypothesisId: "E",
@@ -254,6 +257,7 @@ export function BoardMap({
         styledTerritories,
         missingTerritoryNodes,
         selectedTerritoryId,
+        alaskaFill: alaskaNode?.style.fill ?? null,
       },
     });
     // #endregion
