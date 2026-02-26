@@ -284,6 +284,12 @@ button:disabled {
   transition: filter 0.2s ease, fill-opacity 0.2s ease;
 }
 
+.territory-region:hover,
+.territory-region:focus-visible {
+  filter: drop-shadow(0 0 9px rgba(184, 226, 255, 0.28));
+  outline: none;
+}
+
 .territory-layer {
   position: absolute;
   inset: 0;

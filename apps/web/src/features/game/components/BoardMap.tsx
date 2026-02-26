@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GameStatePublic } from "@risk/shared-types";
 import { formatTerritoryLabel } from "../utils/labels";
 import { TerritoryLayer } from "./TerritoryLayer";
@@ -31,7 +31,7 @@ export function BoardMap({
     }
 
     const root = containerRef.current;
-    const svgElement = root.querySelector("svg");
+    const svgElement = root.querySelector<SVGSVGElement>("svg");
     if (!svgElement) {
       return;
     }
@@ -40,9 +40,7 @@ export function BoardMap({
       const svgRect = svgElement.getBoundingClientRect();
       const nextCenters: Record<string, { x: number; y: number }> = {};
       for (const territoryId of Object.keys(state.territories)) {
-        const path = svgElement.querySelector<SVGPathElement>(
-          `#${CSS.escape(territoryId)}`,
-        );
+        const path = getTerritoryNode(svgElement, territoryId);
         if (!path) {
           continue;
         }
@@ -73,21 +71,19 @@ export function BoardMap({
     }
 
     const root = containerRef.current;
-    const svgElement = root.querySelector("svg");
+    const svgElement = root.querySelector<SVGSVGElement>("svg");
     if (!svgElement) {
       return;
     }
 
     const handlers: Array<{
-      node: SVGPathElement;
+      node: SVGGraphicsElement;
       clickListener: EventListener;
       keydownListener: EventListener;
     }> = [];
 
     for (const territoryId of Object.keys(state.territories)) {
-      const path = svgElement.querySelector<SVGPathElement>(
-        `#${CSS.escape(territoryId)}`,
-      );
+      const path = getTerritoryNode(svgElement, territoryId);
       if (!path) {
         continue;
       }
@@ -108,6 +104,7 @@ export function BoardMap({
         "aria-label",
         `Select territory ${formatTerritoryLabel(territoryId)}`,
       );
+      path.style.pointerEvents = "all";
       path.addEventListener("click", clickListener);
       path.addEventListener("keydown", keydownListener);
       path.style.cursor = "pointer";
@@ -122,49 +119,50 @@ export function BoardMap({
     };
   }, [svgMarkup, state.territories, onSelectTerritory]);
 
-  const territoryStyles = useMemo(() => {
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const root = containerRef.current;
+    const svgElement = root.querySelector<SVGSVGElement>("svg");
+    if (!svgElement) {
+      return;
+    }
+
     const playerById = new Map(
       state.players.map((player) => [player.id, player]),
     );
 
-    const styles = Object.entries(state.territories).map(
-      ([territoryId, territory]) => {
-        const color = territory.ownerId
-          ? playerById.get(territory.ownerId)?.color ?? "#666"
-          : "#5d5d5d";
-        const stroke =
-          selectedTerritoryId === territoryId ? "#f6dd9d" : "rgba(13, 22, 29, 0.88)";
-        const strokeWidth = selectedTerritoryId === territoryId ? "3.2px" : "1.5px";
-        const fillOpacity = selectedTerritoryId === territoryId
-          ? 0.88
-          : territory.ownerId
-            ? 0.66
-            : 0.28;
+    for (const [territoryId, territory] of Object.entries(state.territories)) {
+      const path = getTerritoryNode(svgElement, territoryId);
+      if (!path) {
+        continue;
+      }
 
-        return `
-          #${CSS.escape(territoryId)} {
-            fill: ${color} !important;
-            fill-opacity: ${fillOpacity} !important;
-            stroke: ${stroke} !important;
-            stroke-width: ${strokeWidth} !important;
-            filter: ${selectedTerritoryId === territoryId ? "drop-shadow(0 0 7px rgba(246, 221, 157, 0.36))" : "none"};
-            transition:
-              fill 0.2s ease,
-              stroke 0.2s ease,
-              fill-opacity 0.2s ease,
-              filter 0.2s ease;
-          }
-          #${CSS.escape(territoryId)}:hover,
-          #${CSS.escape(territoryId)}:focus-visible {
-            fill-opacity: ${Math.min(fillOpacity + 0.18, 0.95)} !important;
-            filter: drop-shadow(0 0 9px rgba(184, 226, 255, 0.28));
-            outline: none;
-          }
-        `;
-      },
-    );
+      const color = territory.ownerId
+        ? playerById.get(territory.ownerId)?.color ?? "#666"
+        : "#5d5d5d";
+      const stroke =
+        selectedTerritoryId === territoryId ? "#f6dd9d" : "rgba(13, 22, 29, 0.88)";
+      const strokeWidth = selectedTerritoryId === territoryId ? "3.2px" : "1.5px";
+      const fillOpacity = selectedTerritoryId === territoryId
+        ? 0.88
+        : territory.ownerId
+          ? 0.66
+          : 0.28;
 
-    return styles.join("\n");
+      path.style.fill = color;
+      path.style.fillOpacity = String(fillOpacity);
+      path.style.stroke = stroke;
+      path.style.strokeWidth = strokeWidth;
+      path.style.transition =
+        "fill 0.2s ease, stroke 0.2s ease, fill-opacity 0.2s ease, filter 0.2s ease";
+      path.style.filter =
+        selectedTerritoryId === territoryId
+          ? "drop-shadow(0 0 7px rgba(246, 221, 157, 0.36))"
+          : "none";
+    }
   }, [selectedTerritoryId, state.players, state.territories]);
 
   const selectedTerritory = selectedTerritoryId
@@ -190,7 +188,6 @@ export function BoardMap({
       <div className="board-container" ref={containerRef}>
         {svgMarkup ? (
           <>
-            <style>{territoryStyles}</style>
             <div
               className="risk-board-svg"
               dangerouslySetInnerHTML={{ __html: svgMarkup }}
@@ -253,5 +250,11 @@ export function BoardMap({
         </section>
       </div>
     </section>
+  );
+}
+
+function getTerritoryNode(svgElement: SVGSVGElement, territoryId: string) {
+  return svgElement.querySelector<SVGGraphicsElement>(
+    `#${CSS.escape(territoryId)}`,
   );
 }
