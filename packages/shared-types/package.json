@@ -5,10 +5,11 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -b tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json --pretty false",
     "test": "vitest run"
   },
+  "types": "dist/index.d.ts",
   "dependencies": {
     "zod": "^4.1.8"
   }
