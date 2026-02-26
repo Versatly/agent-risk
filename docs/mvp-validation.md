@@ -1,6 +1,9 @@
 # MVP Validation Matrix
 
-Validation was run against a live local server at `http://127.0.0.1:4242` using real runtime flows.
+Validation was run against live local servers using real runtime flows:
+
+- `http://127.0.0.1:4242` (default bot cadence)
+- `http://127.0.0.1:4243` (accelerated bot cadence for full completion matrix)
 
 ## Scenario 1 — Human vs Human (full game completion)
 
@@ -26,76 +29,83 @@ Observed result:
 }
 ```
 
-## Scenario 2 — Human vs Bot (runtime smoke)
+## Scenario 2 — Human vs Bot (full game completion)
 
 Method:
 - Create lobby (human host)
 - Add bot seat
 - Start game
-- Submit one human setup action and wait for bot tick
+- Drive human turns with legal policy actions while server bot runner executes bot turns
+- Continue until game completion
 
 Observed result:
 
 ```json
 {
-  "scenario": "human_vs_bot",
-  "createStatus": 201,
-  "addBotStatus": 200,
-  "startStatus": 200,
-  "hostClaimStatus": 200,
-  "botTerritories": 1,
-  "phase": "setup_claim"
+  "scenario": "human_vs_bot_full",
+  "winner": "NuDDkjDr8yVF",
+  "round": 7,
+  "phase": "game_over",
+  "loops": 322,
+  "territories": [
+    { "name": "FullHuman", "territories": 0 },
+    { "name": "FullBot", "territories": 42 }
+  ],
+  "botId": "NuDDkjDr8yVF"
 }
 ```
 
-This confirms autonomous bot turns are executing against live server state.
-
-## Scenario 3 — Human vs MCP Agent (runtime smoke via MCP tools)
+## Scenario 3 — Human vs MCP Agent (full game completion via MCP tools)
 
 Method:
 - Create lobby as human via REST
 - Join as agent via MCP `join_game`
 - Start game via MCP `start_game`
-- Human submits one claim via REST
-- Agent reads legal actions via MCP and submits claim via MCP `submit_action`
+- Drive human turns via REST policy
+- Drive agent turns via MCP (`get_game_state` + `submit_action`)
+- Continue until game completion
 
 Observed result:
 
 ```json
 {
-  "scenario": "human_vs_mcp_agent",
-  "createStatus": 201,
-  "startPhase": "setup_claim",
-  "humanClaimStatus": 200,
-  "legalCount": 1,
-  "beforeOwner": null,
-  "afterOwner": "KSNfAk0ivgON",
-  "mcpActionHasPublicState": true
+  "scenario": "human_vs_mcp_agent_full",
+  "winner": "YmIlBmHx0DcQ",
+  "round": 9,
+  "phase": "game_over",
+  "loops": 304,
+  "territories": [
+    { "name": "HumanVsMCP", "territories": 42 },
+    { "name": "MCPAgent", "territories": 0 }
+  ],
+  "agentId": "tNGI_5l5OHZl"
 }
 ```
 
-## Scenario 4 — Agent vs Agent (two MCP clients, runtime smoke)
+## Scenario 4 — Agent vs Agent (full game completion via MCP)
 
 Method:
 - MCP client A creates game via `create_game`
 - MCP client B joins via `join_game`
 - Start via MCP `start_game`
-- Agent A performs first claim
-- Agent B fetches legal actions and performs second claim
+- Drive both agent turns via MCP policy loops
+- Continue until game completion
 
 Observed result:
 
 ```json
 {
-  "scenario": "agent_vs_agent_mcp",
-  "initialCurrentPlayer": "WJM2wcAm3LUC",
-  "afterAClaimCurrentPlayer": "CxRb8oC5mDXG",
-  "bLegalCount": 1,
-  "owners": {
-    "alaska": "WJM2wcAm3LUC",
-    "greenland": "CxRb8oC5mDXG"
-  },
-  "phase": "setup_claim"
+  "scenario": "agent_vs_agent_full",
+  "winner": "g7TjLY6Am9M3",
+  "round": 14,
+  "phase": "game_over",
+  "loops": 433,
+  "territories": [
+    { "name": "AgentFullA", "territories": 0 },
+    { "name": "AgentFullB", "territories": 42 }
+  ],
+  "agentA": "T6PVMkjp1kS6",
+  "agentB": "g7TjLY6Am9M3"
 }
 ```
 
