@@ -1,0 +1,15 @@
+{
+  "name": "@risk/shared-types",
+  "version": "0.1.0",
+  "description": "Shared DTOs and contracts for Risk game apps",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.8"
+  }
+}

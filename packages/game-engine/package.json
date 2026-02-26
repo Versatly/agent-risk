@@ -1,0 +1,16 @@
+{
+  "name": "@risk/game-engine",
+  "version": "0.1.0",
+  "description": "Deterministic Risk rules engine",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@risk/shared-types": "*",
+    "zod": "^4.1.8"
+  }
+}
