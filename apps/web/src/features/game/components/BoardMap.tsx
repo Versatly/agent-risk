@@ -144,6 +144,7 @@ export function BoardMap({
       path.classList.add("territory-region");
       path.setAttribute("tabindex", "0");
       path.setAttribute("role", "button");
+      path.setAttribute("data-agent-click-bound", "true");
       path.setAttribute(
         "aria-label",
         `Select territory ${formatTerritoryLabel(territoryId)}`,
