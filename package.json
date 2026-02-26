@@ -1,0 +1,36 @@
+{
+  "name": "risk-browser-game",
+  "version": "1.0.0",
+  "description": "Risk-style browser strategy game with MCP agent support",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:web": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/web",
+    "dev:server": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/server",
+    "dev:mcp": "npm run build --workspace @risk/shared-types && npm run dev --workspace @risk/mcp-server",
+    "dev:cli": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run dev --workspace @risk/cli",
+    "build": "npm run build --workspace @risk/shared-types && npm run build --workspace @risk/game-engine && npm run build --workspace @risk/server && npm run build --workspace @risk/mcp-server && npm run build --workspace @risk/cli && npm run build --workspace @risk/web",
+    "typecheck": "npm run typecheck --workspace @risk/shared-types && npm run typecheck --workspace @risk/game-engine && npm run typecheck --workspace @risk/server && npm run typecheck --workspace @risk/mcp-server && npm run typecheck --workspace @risk/cli && npm run typecheck --workspace @risk/web",
+    "test": "npm run test --workspace @risk/game-engine && npm run test --workspace @risk/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Versatly/agent-risk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Versatly/agent-risk/issues"
+  },
+  "homepage": "https://github.com/Versatly/agent-risk#readme",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

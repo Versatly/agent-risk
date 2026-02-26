@@ -1,0 +1,22 @@
+{
+  "name": "@risk/cli",
+  "version": "0.1.0",
+  "description": "CLI utilities for Risk game operations",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "risk-cli": "dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -b tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json --pretty false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5"
+  }
+}
