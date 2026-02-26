@@ -80,3 +80,4 @@ npm run build
 - `docs/cli-usage.md`
 - `docs/skills/risk-agent-play.md`
 - `docs/assets-and-attribution.md`
+- `docs/mvp-validation.md`
