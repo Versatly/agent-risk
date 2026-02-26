@@ -198,7 +198,7 @@ export function BoardMap({
         handler.node.removeEventListener("keydown", handler.keydownListener);
       }
     };
-  }, [svgMarkup, state.territories, onSelectTerritory]);
+  });
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -262,7 +262,7 @@ export function BoardMap({
       },
     });
     // #endregion
-  }, [selectedTerritoryId, state.players, state.territories]);
+  });
 
   const selectedTerritory = selectedTerritoryId
     ? state.territories[selectedTerritoryId]
