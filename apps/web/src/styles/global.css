@@ -534,10 +534,12 @@ button:disabled {
   display: grid;
   place-items: center;
   z-index: 100;
+  pointer-events: none;
 }
 
 .onboarding-card {
   width: min(560px, 90vw);
+  pointer-events: auto;
 }
 
 .winner-banner {

@@ -348,7 +348,18 @@ export function BoardMap({
 }
 
 function getTerritoryNode(svgElement: SVGSVGElement, territoryId: string) {
-  return svgElement.querySelector<SVGGraphicsElement>(
-    `#${CSS.escape(territoryId)}`,
-  );
+  const candidateIds = [territoryId, ...(TERRITORY_ID_ALIASES[territoryId] ?? [])];
+  for (const candidateId of candidateIds) {
+    const node = svgElement.querySelector<SVGGraphicsElement>(
+      `#${CSS.escape(candidateId)}`,
+    );
+    if (node) {
+      return node;
+    }
+  }
+  return null;
 }
+
+const TERRITORY_ID_ALIASES: Record<string, string[]> = {
+  yakutsk: ["yakursk"],
+};
