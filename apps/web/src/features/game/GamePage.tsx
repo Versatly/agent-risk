@@ -9,7 +9,6 @@ import { CardsPanel } from "./components/CardsPanel";
 import { BattleLogPanel } from "./components/BattleLogPanel";
 import { OnboardingTour, shouldShowOnboarding } from "./components/OnboardingTour";
 import { formatPhaseLabel, formatTerritoryLabel } from "./utils/labels";
-import { agentDebugLog } from "./utils/agentDebugLog";
 
 interface GamePageProps {
   credentials: SessionCredentials;
@@ -52,21 +51,6 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
     }
     void refreshLegalActions(credentials);
   }, [credentials, privateState, refreshLegalActions]);
-
-  useEffect(() => {
-    // #region agent log
-    agentDebugLog({
-      hypothesisId: "D",
-      location: "GamePage.tsx:selectedTerritoryEffect",
-      message: "Selected territory state changed",
-      data: {
-        selectedTerritoryId,
-        hasPublicState: Boolean(publicState),
-        hasPrivateState: Boolean(privateState),
-      },
-    });
-    // #endregion
-  }, [privateState, publicState, selectedTerritoryId]);
 
   const isMyTurn = useMemo(
     () => privateState?.currentPlayerId === credentials.playerId,
