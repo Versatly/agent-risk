@@ -5,6 +5,9 @@ import {
   calculateTerritoryReinforcement,
   calculateContinentReinforcement,
   resolveAttack,
+  ADJACENCY,
+  SeededRandomSource,
+  type TerritoryId,
 } from "../index.js";
 import type { RandomSource } from "../types.js";
 
@@ -124,4 +127,118 @@ describe("game engine core", () => {
     expect(combat?.state.territories.northwest_territory.ownerId).toBe("p1");
     expect(combat?.state.pendingOccupation).toBeNull();
   });
+
+  it("simulates to a winner with deterministic bot policy", () => {
+    let state = createGameState({
+      gameId: "test_full_game",
+      lobbyCode: "TST999",
+      players: [
+        { id: "p1", name: "Alpha", kind: "bot" },
+        { id: "p2", name: "Bravo", kind: "bot" },
+      ],
+    });
+
+    const rng = new SeededRandomSource(42);
+    const maxActions = 20_000;
+
+    for (let step = 0; step < maxActions && !state.winnerId; step += 1) {
+      const currentPlayer = state.currentPlayerId;
+      const action = choosePolicyAction(state, currentPlayer);
+      const result = applyGameAction(state, currentPlayer, action, rng);
+      if (!result.ok) {
+        throw new Error(`Policy produced invalid action: ${JSON.stringify(action)}`);
+      }
+      state = result.state;
+    }
+
+    expect(state.winnerId).not.toBeNull();
+    expect(state.currentPhase).toBe("game_over");
+  });
 });
+
+function choosePolicyAction(state: ReturnType<typeof createGameState>, playerId: string) {
+  const territories = Object.values(state.territories);
+  const mine = territories.filter((territory) => territory.ownerId === playerId);
+
+  switch (state.currentPhase) {
+    case "setup_claim": {
+      const unowned = territories.find((territory) => territory.ownerId === null);
+      return {
+        type: "claim_territory" as const,
+        territoryId: unowned?.id ?? territories[0].id,
+      };
+    }
+    case "setup_reinforce":
+    case "reinforce": {
+      const frontline = mine
+        .slice()
+        .sort((a, b) => pressure(state, b.id) - pressure(state, a.id))[0];
+      const troops = Math.max(1, state.players.find((player) => player.id === playerId)?.reinforcementPool ?? 1);
+      return {
+        type: "place_troops" as const,
+        territoryId: frontline?.id ?? mine[0].id,
+        troops,
+      };
+    }
+    case "attack": {
+      for (const source of mine) {
+        if (source.troops < 2) {
+          continue;
+        }
+        const neighbors = ADJACENCY[source.id as TerritoryId] as string[];
+        const target = neighbors
+          .map((neighborId) => state.territories[neighborId as TerritoryId])
+          .find(
+            (territory) =>
+              territory.ownerId !== playerId && source.troops > territory.troops,
+          );
+        if (target) {
+          return {
+            type: "attack" as const,
+            fromTerritoryId: source.id,
+            toTerritoryId: target.id,
+            attackDice: Math.min(3, source.troops - 1),
+          };
+        }
+      }
+      return { type: "end_attack" as const };
+    }
+    case "occupy":
+      return {
+        type: "occupy" as const,
+        troops: state.pendingOccupation?.minTroops ?? 1,
+      };
+    case "fortify": {
+      const source = mine.find((territory) => territory.troops > 1);
+      if (!source) {
+        return { type: "end_turn" as const };
+      }
+
+      const destination = (ADJACENCY[source.id as TerritoryId] as string[])
+        .map((neighborId) => state.territories[neighborId as TerritoryId])
+        .find((territory) => territory.ownerId === playerId);
+
+      if (!destination) {
+        return { type: "end_turn" as const };
+      }
+
+      return {
+        type: "fortify" as const,
+        fromTerritoryId: source.id,
+        toTerritoryId: destination.id,
+        troops: 1,
+      };
+    }
+    case "game_over":
+    default:
+      return { type: "end_turn" as const };
+  }
+}
+
+function pressure(state: ReturnType<typeof createGameState>, territoryId: string) {
+  const territory = state.territories[territoryId as TerritoryId];
+  const neighbors = ADJACENCY[territory.id as TerritoryId] as string[];
+  return neighbors.reduce((total, neighborId) => {
+    return total + (state.territories[neighborId as TerritoryId].ownerId === territory.ownerId ? 0 : 1);
+  }, 0);
+}

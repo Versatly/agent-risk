@@ -7,6 +7,7 @@ import {
   applyGameAction,
   DefaultRandomSource,
   PLAYER_COLORS,
+  ADJACENCY,
 } from "@risk/game-engine";
 import type { RiskAction } from "@risk/shared-types";
 
@@ -240,26 +241,60 @@ function chooseRandomActionFromHint(
         troops: 1,
       };
     case "attack":
-      return {
-        type: "attack",
-        fromTerritoryId: fallbackMine,
-        toTerritoryId: fallbackEnemy,
-        attackDice: 1,
-      };
+      for (const source of mine) {
+        if (source.troops < 2) {
+          continue;
+        }
+
+        const adjacentEnemies = (ADJACENCY[source.id as keyof typeof ADJACENCY] as string[])
+          .map(
+            (neighborId) =>
+              state.territories[neighborId as keyof typeof state.territories],
+          )
+          .filter((territory) => territory.ownerId !== state.currentPlayerId);
+
+        const target = adjacentEnemies[0];
+        if (target) {
+          return {
+            type: "attack",
+            fromTerritoryId: source.id,
+            toTerritoryId: target.id,
+            attackDice: Math.min(3, source.troops - 1),
+          };
+        }
+      }
+
+      return { type: "end_attack" };
     case "occupy":
       return {
         type: "occupy",
         troops: state.pendingOccupation?.minTroops ?? 1,
       };
+    case "fortify":
+      for (const source of mine) {
+        if (source.troops < 2) {
+          continue;
+        }
+        const adjacentOwned = (ADJACENCY[source.id as keyof typeof ADJACENCY] as string[])
+          .map(
+            (neighborId) =>
+              state.territories[neighborId as keyof typeof state.territories],
+          )
+          .find((territory) => territory.ownerId === state.currentPlayerId);
+
+        if (adjacentOwned) {
+          return {
+            type: "fortify",
+            fromTerritoryId: source.id,
+            toTerritoryId: adjacentOwned.id,
+            troops: 1,
+          };
+        }
+      }
+
+      return { type: "end_turn" };
     case "end_attack":
       return { type: "end_attack" };
-    case "fortify":
-      return {
-        type: "fortify",
-        fromTerritoryId: fallbackMine,
-        toTerritoryId: fallbackMine,
-        troops: 1,
-      };
     case "end_turn":
       return { type: "end_turn" };
     case "trade_cards":
