@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameStatePublic } from "@risk/shared-types";
 import { formatTerritoryLabel } from "../utils/labels";
 import { TerritoryLayer } from "./TerritoryLayer";
+import { agentDebugLog } from "../utils/agentDebugLog";
 
 interface BoardMapProps {
   state: GameStatePublic;
@@ -21,8 +22,30 @@ export function BoardMap({
   useEffect(() => {
     fetch("/assets/board/risk-board.svg")
       .then((response) => response.text())
-      .then((text) => setSvgMarkup(text))
-      .catch(() => setSvgMarkup(""));
+      .then((text) => {
+        setSvgMarkup(text);
+        // #region agent log
+        agentDebugLog({
+          hypothesisId: "A",
+          location: "BoardMap.tsx:fetchSvg.then",
+          message: "Loaded board SVG markup",
+          data: {
+            markupLength: text.length,
+          },
+        });
+        // #endregion
+      })
+      .catch(() => {
+        setSvgMarkup("");
+        // #region agent log
+        agentDebugLog({
+          hypothesisId: "A",
+          location: "BoardMap.tsx:fetchSvg.catch",
+          message: "Failed to load board SVG markup",
+          data: {},
+        });
+        // #endregion
+      });
   }, []);
 
   useEffect(() => {
@@ -76,19 +99,40 @@ export function BoardMap({
       return;
     }
 
+    const territoryIds = Object.keys(state.territories);
+    const territoryIdSet = new Set(territoryIds);
     const handlers: Array<{
       node: SVGGraphicsElement;
       clickListener: EventListener;
       keydownListener: EventListener;
     }> = [];
+    const missingTerritoryNodes: string[] = [];
 
-    for (const territoryId of Object.keys(state.territories)) {
+    for (const territoryId of territoryIds) {
       const path = getTerritoryNode(svgElement, territoryId);
       if (!path) {
+        missingTerritoryNodes.push(territoryId);
         continue;
       }
 
-      const clickListener = () => onSelectTerritory(territoryId);
+      const clickListener = (event: Event) => {
+        const target = event.target instanceof Element ? event.target.id : null;
+        // #region agent log
+        agentDebugLog({
+          hypothesisId: "C",
+          location: "BoardMap.tsx:clickListener",
+          message: "Territory click listener fired",
+          data: {
+            territoryId,
+            targetId: target,
+            currentTargetId: path.id,
+            pointerEvents: path.style.pointerEvents || null,
+            fill: path.style.fill || null,
+          },
+        });
+        // #endregion
+        onSelectTerritory(territoryId);
+      };
       const keydownListener = (event: Event) => {
         const keyboardEvent = event as KeyboardEvent;
         if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
@@ -111,7 +155,41 @@ export function BoardMap({
       handlers.push({ node: path, clickListener, keydownListener });
     }
 
+    const svgClickListener = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const targetId = target?.id ?? null;
+      if (targetId && territoryIdSet.has(targetId)) {
+        return;
+      }
+      // #region agent log
+      agentDebugLog({
+        hypothesisId: "B",
+        location: "BoardMap.tsx:svgClickListener",
+        message: "SVG click landed outside a known territory id",
+        data: {
+          targetId,
+          targetTag: target?.tagName?.toLowerCase() ?? null,
+        },
+      });
+      // #endregion
+    };
+
+    svgElement.addEventListener("click", svgClickListener);
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "A",
+      location: "BoardMap.tsx:attachHandlers",
+      message: "Attached territory interaction handlers",
+      data: {
+        expectedTerritories: territoryIds.length,
+        attachedHandlers: handlers.length,
+        missingTerritoryNodes,
+      },
+    });
+    // #endregion
+
     return () => {
+      svgElement.removeEventListener("click", svgClickListener);
       for (const handler of handlers) {
         handler.node.removeEventListener("click", handler.clickListener);
         handler.node.removeEventListener("keydown", handler.keydownListener);
@@ -133,10 +211,13 @@ export function BoardMap({
     const playerById = new Map(
       state.players.map((player) => [player.id, player]),
     );
+    let styledTerritories = 0;
+    const missingTerritoryNodes: string[] = [];
 
     for (const [territoryId, territory] of Object.entries(state.territories)) {
       const path = getTerritoryNode(svgElement, territoryId);
       if (!path) {
+        missingTerritoryNodes.push(territoryId);
         continue;
       }
 
@@ -162,7 +243,20 @@ export function BoardMap({
         selectedTerritoryId === territoryId
           ? "drop-shadow(0 0 7px rgba(246, 221, 157, 0.36))"
           : "none";
+      styledTerritories += 1;
     }
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "E",
+      location: "BoardMap.tsx:styleTerritories",
+      message: "Applied territory visual styles",
+      data: {
+        styledTerritories,
+        missingTerritoryNodes,
+        selectedTerritoryId,
+      },
+    });
+    // #endregion
   }, [selectedTerritoryId, state.players, state.territories]);
 
   const selectedTerritory = selectedTerritoryId
