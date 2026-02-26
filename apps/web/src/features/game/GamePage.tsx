@@ -8,6 +8,7 @@ import { CombatPanel } from "./components/CombatPanel";
 import { CardsPanel } from "./components/CardsPanel";
 import { BattleLogPanel } from "./components/BattleLogPanel";
 import { OnboardingTour, shouldShowOnboarding } from "./components/OnboardingTour";
+import { formatPhaseLabel, formatTerritoryLabel } from "./utils/labels";
 
 interface GamePageProps {
   credentials: SessionCredentials;
@@ -56,6 +57,11 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
     [credentials.playerId, privateState],
   );
 
+  const myPublicPlayer = useMemo(
+    () => publicState?.players.find((player) => player.id === credentials.playerId),
+    [credentials.playerId, publicState],
+  );
+
   async function handleSubmitAction(action: Record<string, unknown>) {
     await submitAction(credentials, action as RiskAction);
   }
@@ -97,13 +103,16 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
   }
 
   return (
-    <main className="game-layout">
-      <header className="panel row between">
-        <div>
-          <h1>Lobby {credentials.lobbyCode}</h1>
+    <main className="war-room-layout">
+      <header className="panel row between war-room-topbar">
+        <div className="stack gap-xs">
+          <p className="war-room-kicker">Lobby {credentials.lobbyCode}</p>
+          <h1>Global Command</h1>
           <p>
-            {isMyTurn ? "Your move." : "Waiting for another commander..."} ·{" "}
-            Phase: {privateState.currentPhase}
+            {isMyTurn
+              ? "Your offensive window is open."
+              : "Monitoring allied commanders."}{" "}
+            · Phase: {formatPhaseLabel(privateState.currentPhase)}
           </p>
         </div>
         <div className="row gap-sm">
@@ -124,14 +133,29 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
         </div>
       </header>
 
-      <section className="game-main-grid">
+      <section className="war-room-stage">
         <BoardMap
           state={publicState}
           selectedTerritoryId={selectedTerritoryId}
           onSelectTerritory={setSelectedTerritoryId}
         />
 
-        <aside className="stack gap-md side-column">
+        <aside className="stack gap-md command-dock">
+          <section className="panel stack gap-xs">
+            <h2>Commander Snapshot</h2>
+            <p>
+              You control <strong>{myPublicPlayer?.territories ?? 0}</strong> territories
+              and hold <strong>{privateState.me.cards.length}</strong> cards.
+            </p>
+            <p>
+              Territory focus:{" "}
+              <strong>
+                {selectedTerritoryId
+                  ? formatTerritoryLabel(selectedTerritoryId)
+                  : "No territory selected"}
+              </strong>
+            </p>
+          </section>
           <TurnPanel publicState={publicState} privateState={privateState} />
           <CombatPanel
             state={privateState}
@@ -143,12 +167,12 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
         </aside>
       </section>
 
-      <section className="bottom-grid">
+      <section className="war-room-feed">
         <BattleLogPanel state={publicState} />
-        <section className="panel stack gap-sm">
+        <section className="panel stack gap-sm legal-intel-panel">
           <h2>Legal Action Hints</h2>
           {legalActions.length === 0 ? (
-            <p>No legal actions right now.</p>
+            <p>No legal actions available for the current phase.</p>
           ) : (
             <ul className="legal-list">
               {legalActions.map((hint) => (

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GameStatePublic } from "@risk/shared-types";
+import { formatTerritoryLabel } from "../utils/labels";
 import { TerritoryLayer } from "./TerritoryLayer";
 
 interface BoardMapProps {
@@ -79,7 +80,8 @@ export function BoardMap({
 
     const handlers: Array<{
       node: SVGPathElement;
-      listener: EventListener;
+      clickListener: EventListener;
+      keydownListener: EventListener;
     }> = [];
 
     for (const territoryId of Object.keys(state.territories)) {
@@ -90,15 +92,32 @@ export function BoardMap({
         continue;
       }
 
-      const listener = () => onSelectTerritory(territoryId);
-      path.addEventListener("click", listener);
+      const clickListener = () => onSelectTerritory(territoryId);
+      const keydownListener = (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+          keyboardEvent.preventDefault();
+          onSelectTerritory(territoryId);
+        }
+      };
+
+      path.classList.add("territory-region");
+      path.setAttribute("tabindex", "0");
+      path.setAttribute("role", "button");
+      path.setAttribute(
+        "aria-label",
+        `Select territory ${formatTerritoryLabel(territoryId)}`,
+      );
+      path.addEventListener("click", clickListener);
+      path.addEventListener("keydown", keydownListener);
       path.style.cursor = "pointer";
-      handlers.push({ node: path, listener });
+      handlers.push({ node: path, clickListener, keydownListener });
     }
 
     return () => {
       for (const handler of handlers) {
-        handler.node.removeEventListener("click", handler.listener);
+        handler.node.removeEventListener("click", handler.clickListener);
+        handler.node.removeEventListener("keydown", handler.keydownListener);
       }
     };
   }, [svgMarkup, state.territories, onSelectTerritory]);
@@ -114,16 +133,32 @@ export function BoardMap({
           ? playerById.get(territory.ownerId)?.color ?? "#666"
           : "#5d5d5d";
         const stroke =
-          selectedTerritoryId === territoryId ? "#fff8d6" : "#1f1f1f";
-        const strokeWidth = selectedTerritoryId === territoryId ? "3px" : "1.4px";
+          selectedTerritoryId === territoryId ? "#f6dd9d" : "rgba(13, 22, 29, 0.88)";
+        const strokeWidth = selectedTerritoryId === territoryId ? "3.2px" : "1.5px";
+        const fillOpacity = selectedTerritoryId === territoryId
+          ? 0.88
+          : territory.ownerId
+            ? 0.66
+            : 0.28;
 
         return `
           #${CSS.escape(territoryId)} {
             fill: ${color} !important;
-            fill-opacity: ${territory.ownerId ? 0.7 : 0.28} !important;
+            fill-opacity: ${fillOpacity} !important;
             stroke: ${stroke} !important;
             stroke-width: ${strokeWidth} !important;
-            transition: fill 0.2s ease, stroke 0.2s ease;
+            filter: ${selectedTerritoryId === territoryId ? "drop-shadow(0 0 7px rgba(246, 221, 157, 0.36))" : "none"};
+            transition:
+              fill 0.2s ease,
+              stroke 0.2s ease,
+              fill-opacity 0.2s ease,
+              filter 0.2s ease;
+          }
+          #${CSS.escape(territoryId)}:hover,
+          #${CSS.escape(territoryId)}:focus-visible {
+            fill-opacity: ${Math.min(fillOpacity + 0.18, 0.95)} !important;
+            filter: drop-shadow(0 0 9px rgba(184, 226, 255, 0.28));
+            outline: none;
           }
         `;
       },
@@ -132,11 +167,26 @@ export function BoardMap({
     return styles.join("\n");
   }, [selectedTerritoryId, state.players, state.territories]);
 
+  const selectedTerritory = selectedTerritoryId
+    ? state.territories[selectedTerritoryId]
+    : null;
+  const selectedOwner = selectedTerritory?.ownerId
+    ? state.players.find((player) => player.id === selectedTerritory.ownerId)
+    : null;
+  const territoryCount = Object.keys(state.territories).length;
+  const claimedTerritoryCount = Object.values(state.territories).filter(
+    (territory) => territory.ownerId,
+  ).length;
+  const troopsOnBoard = Object.values(state.territories).reduce(
+    (sum, territory) => sum + territory.troops,
+    0,
+  );
+  const latestBattleEvent = state.battleLog.length
+    ? state.battleLog[state.battleLog.length - 1]
+    : null;
+
   return (
-    <section className="board-shell panel">
-      <div className="board-title-row">
-        <h2>World Map</h2>
-      </div>
+    <section className="board-shell">
       <div className="board-container" ref={containerRef}>
         {svgMarkup ? (
           <>
@@ -145,11 +195,62 @@ export function BoardMap({
               className="risk-board-svg"
               dangerouslySetInnerHTML={{ __html: svgMarkup }}
             />
-            <TerritoryLayer state={state} centers={centers} />
+            <TerritoryLayer
+              state={state}
+              centers={centers}
+              selectedTerritoryId={selectedTerritoryId}
+            />
           </>
         ) : (
           <div className="board-loading">Loading board...</div>
         )}
+
+        <section className="map-hud map-hud-top-left panel stack gap-xs">
+          <p className="hud-kicker">Strategic Theater</p>
+          <h2>World Command Map</h2>
+          <p>Drive every decision directly from the battlefield.</p>
+        </section>
+
+        <section className="map-hud map-hud-top-right panel">
+          <div className="hud-stat-grid">
+            <article className="hud-stat-card">
+              <strong>{state.players.length}</strong>
+              <span>Commanders</span>
+            </article>
+            <article className="hud-stat-card">
+              <strong>{claimedTerritoryCount}/{territoryCount}</strong>
+              <span>Claimed</span>
+            </article>
+            <article className="hud-stat-card">
+              <strong>{troopsOnBoard}</strong>
+              <span>Total Troops</span>
+            </article>
+            <article className="hud-stat-card">
+              <strong>Round {state.round}</strong>
+              <span>Current Cycle</span>
+            </article>
+          </div>
+        </section>
+
+        <section className="map-hud map-hud-bottom-left panel stack gap-xs">
+          <h3>
+            {selectedTerritoryId
+              ? formatTerritoryLabel(selectedTerritoryId)
+              : "Select a Territory"}
+          </h3>
+          {selectedTerritory ? (
+            <p>
+              {selectedOwner
+                ? `${selectedOwner.name} controls this position with ${selectedTerritory.troops} troops.`
+                : `This position is unclaimed with ${selectedTerritory.troops} troops.`}
+            </p>
+          ) : (
+            <p>Click the map to inspect troop counts and launch commands.</p>
+          )}
+          {latestBattleEvent ? (
+            <p className="latest-event">Latest Event: {latestBattleEvent.message}</p>
+          ) : null}
+        </section>
       </div>
     </section>
   );
