@@ -1,4 +1,5 @@
 import type { GameStatePrivate, GameStatePublic } from "@risk/shared-types";
+import { formatPhaseLabel } from "../utils/labels";
 
 interface TurnPanelProps {
   publicState: GameStatePublic;
@@ -6,21 +7,28 @@ interface TurnPanelProps {
 }
 
 export function TurnPanel({ publicState, privateState }: TurnPanelProps) {
+  const currentPlayer = publicState.players.find(
+    (player) => player.id === publicState.currentPlayerId,
+  );
+
   return (
     <section className="panel turn-panel stack gap-sm">
-      <h2>Turn Status</h2>
+      <div className="row between">
+        <h2>Turn Status</h2>
+        <span className="phase-pill">{formatPhaseLabel(publicState.currentPhase)}</span>
+      </div>
+      <div className="turn-highlights">
+        <article className="turn-highlight-card">
+          <span>Round</span>
+          <strong>{publicState.round}</strong>
+        </article>
+        <article className="turn-highlight-card">
+          <span>Reinforcements</span>
+          <strong>{privateState.me.reinforcementPool}</strong>
+        </article>
+      </div>
       <p>
-        <strong>Round:</strong> {publicState.round}
-      </p>
-      <p>
-        <strong>Phase:</strong> {formatPhase(publicState.currentPhase)}
-      </p>
-      <p>
-        <strong>Current Player:</strong>{" "}
-        {publicState.players.find((player) => player.id === publicState.currentPlayerId)?.name}
-      </p>
-      <p>
-        <strong>Your Reinforcements:</strong> {privateState.me.reinforcementPool}
+        <strong>Current Player:</strong> {currentPlayer?.name ?? "Unknown"}
       </p>
       <div className="player-list stack gap-xs">
         {publicState.players.map((player) => (
@@ -38,11 +46,4 @@ export function TurnPanel({ publicState, privateState }: TurnPanelProps) {
       </div>
     </section>
   );
-}
-
-function formatPhase(phase: string) {
-  return phase
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
 }
