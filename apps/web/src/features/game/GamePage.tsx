@@ -104,58 +104,62 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
 
   return (
     <main className="war-room-layout">
-      <header className="panel row between war-room-topbar">
-        <div className="stack gap-xs">
-          <p className="war-room-kicker">Lobby {credentials.lobbyCode}</p>
-          <h1>Global Command</h1>
-          <p>
-            {isMyTurn
-              ? "Your offensive window is open."
-              : "Monitoring allied commanders."}{" "}
-            · Phase: {formatPhaseLabel(privateState.currentPhase)}
-          </p>
-        </div>
-        <div className="row gap-sm">
-          <button
-            onClick={() => {
-              setShowTour(true);
-            }}
-          >
-            Onboarding
-          </button>
-          <button
-            onClick={() => {
-              onLeaveSession();
-            }}
-          >
-            Exit to Lobby
-          </button>
-        </div>
-      </header>
-
-      <section className="war-room-stage">
+      <section className="war-room-overlay-stage">
         <BoardMap
           state={publicState}
           selectedTerritoryId={selectedTerritoryId}
           onSelectTerritory={setSelectedTerritoryId}
         />
 
-        <aside className="stack gap-md command-dock">
-          <section className="panel stack gap-xs">
-            <h2>Commander Snapshot</h2>
+        <header className="panel row between war-room-topbar overlay-topbar">
+          <div className="stack gap-xs">
+            <p className="war-room-kicker">Lobby {credentials.lobbyCode}</p>
+            <h1>Global Command</h1>
             <p>
-              You control <strong>{myPublicPlayer?.territories ?? 0}</strong> territories
-              and hold <strong>{privateState.me.cards.length}</strong> cards.
+              {isMyTurn
+                ? "Your offensive window is open."
+                : "Monitoring allied commanders."}{" "}
+              · Phase: {formatPhaseLabel(privateState.currentPhase)}
             </p>
-            <p>
-              Territory focus:{" "}
-              <strong>
-                {selectedTerritoryId
-                  ? formatTerritoryLabel(selectedTerritoryId)
-                  : "No territory selected"}
-              </strong>
-            </p>
-          </section>
+          </div>
+          <div className="row gap-sm">
+            <button
+              onClick={() => {
+                setShowTour(true);
+              }}
+            >
+              Onboarding
+            </button>
+            <button
+              onClick={() => {
+                onLeaveSession();
+              }}
+            >
+              Exit to Lobby
+            </button>
+          </div>
+        </header>
+
+        <section className="panel stack gap-xs overlay-commander-panel">
+          <h2>Commander Snapshot</h2>
+          <p>
+            You control <strong>{myPublicPlayer?.territories ?? 0}</strong> territories
+            and hold <strong>{privateState.me.cards.length}</strong> cards.
+          </p>
+          <p>
+            Territory focus:{" "}
+            <strong>
+              {selectedTerritoryId
+                ? formatTerritoryLabel(selectedTerritoryId)
+                : "No territory selected"}
+            </strong>
+          </p>
+          <p>
+            Reinforcements in reserve: <strong>{privateState.me.reinforcementPool}</strong>
+          </p>
+        </section>
+
+        <aside className="stack gap-md overlay-command-stack">
           <TurnPanel publicState={publicState} privateState={privateState} />
           <CombatPanel
             state={privateState}
@@ -165,11 +169,12 @@ export function GamePage({ credentials, onLeaveSession }: GamePageProps) {
           />
           <CardsPanel state={privateState} onSubmitAction={handleSubmitAction} />
         </aside>
-      </section>
 
-      <section className="war-room-feed">
-        <BattleLogPanel state={publicState} />
-        <section className="panel stack gap-sm legal-intel-panel">
+        <div className="overlay-battle-log">
+          <BattleLogPanel state={publicState} />
+        </div>
+
+        <section className="panel stack gap-sm legal-intel-panel overlay-legal-intel">
           <h2>Legal Action Hints</h2>
           {legalActions.length === 0 ? (
             <p>No legal actions available for the current phase.</p>

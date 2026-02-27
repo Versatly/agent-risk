@@ -37,7 +37,7 @@ export function BoardMap({
     }
 
     const updateCenters = () => {
-      const svgRect = svgElement.getBoundingClientRect();
+      const containerRect = root.getBoundingClientRect();
       const nextCenters: Record<string, { x: number; y: number }> = {};
       for (const territoryId of Object.keys(state.territories)) {
         const path = getTerritoryNode(svgElement, territoryId);
@@ -47,8 +47,14 @@ export function BoardMap({
 
         const rect = path.getBoundingClientRect();
         nextCenters[territoryId] = {
-          x: ((rect.left + rect.width / 2 - svgRect.left) / svgRect.width) * 100,
-          y: ((rect.top + rect.height / 2 - svgRect.top) / svgRect.height) * 100,
+          x:
+            ((rect.left + rect.width / 2 - containerRect.left) /
+              containerRect.width) *
+            100,
+          y:
+            ((rect.top + rect.height / 2 - containerRect.top) /
+              containerRect.height) *
+            100,
         };
       }
       setCenters(nextCenters);
